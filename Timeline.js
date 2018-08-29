@@ -173,10 +173,16 @@ class Calendar{
 	constructor(abbreviation, json_data){
 		this.valid = false;
 
+		if (abbreviation == undefined || abbreviation == "" || typeof abbreviation != "string"){
+			console.log("Calendars require an abbreviation");
+			return;
+		}
+		this.abbreviation = abbreviation;
+
 		//Get the calendars name
-		if (json_data.name == undefined || json_data.name == "") {
-			console.log("Calendar doesn't have a name, giving it the abbreviation "+abbreviation);
-			this.name = abbreviation;
+		if (json_data.name == undefined || json_data.name == "" || typeof json_data.name != "string") {
+			console.log("Calendar doesn't have a name, giving it the abbreviation "+this.abbreviation);
+			this.name = this.abbreviation;
 		}
 		else {this.name = json_data.name};
 
@@ -189,7 +195,7 @@ class Calendar{
 		}
 		else{
 			//Only god time should not have a refrence point.
-			if (abbreviation != "GT"){
+			if (this.abbreviation != "GT"){
 				console.log("Calendar "+this.name +" doesn't have a start date");
 				return;
 			}
@@ -227,8 +233,8 @@ class Calendar{
 
 	//Parse date like Y/M/D
 	parseDate(date_string){
-		if (this.reference == undefined){
-			console.log("refrence not defined for "+this.name+" Calendar");
+		if (!this.valid){
+			console.log(this.name+" is not a valid Calendar");
 			return -1;
 		}
 
@@ -260,8 +266,38 @@ class Calendar{
 		return time_gt;
 	}
 
+	//prints date from god time to this calendar
 	get_string(god_time){
+		if (!this.valid){
+			console.log(this.name+" is not a valid Calendar");
+			return "NULL";
+		}
 
+		if (isNaN(god_time)){
+			console.log("getString requires a number!");
+			return "BAD FORMATION";
+		}
+
+		var relative_time = god_time - this.reference;
+
+		//get year
+		var year = Math.floor(relative_time/this.year_len);
+
+		var day = relative_time%this.year_len;
+
+		//get month
+		var month;
+		for (month = this.months.length; month > 0; month--){
+			//I don't like this break but i think its safer then having
+			//a while loop potentially run forever
+			if (day < this.months[month].position) break;
+		}
+
+		//get day
+		day -= this.months[month].position;
+
+		//Now put it all together
+		return year.toString()+"/"+month.toString()+"/"+day.toString()+" "+this.abbreviation;
 	}
 }
 
@@ -290,7 +326,6 @@ function GetInitalData(wiki){
 			}
 		}
 	});
-
 
 }
 
