@@ -20,133 +20,24 @@ exports.params = [
 	{name: "type"},
 ];
 
+const DEFAULT_CALENDAR = "PCC";
+
 class EventObject{
 	constructor(time_string, event_name, event_tag){
-		this.time_obj = new TimeObject(time_string);
+		this.time_obj = parseStringTime(time_string);
 		this.event_name = event_name;
 		this.event_tag = event_tag;
 	}
 
 	get_gt(){
-		return this.time_obj.get_as_number("GT");
+		return this.time_obj;
 	}
 
 	get_time(type){
-		return this.time_obj.get_as_string(type)
+		if (type == undefined || type == "") type = DEFAULT_CALENDAR;
+		return Calendar_List[type].get_string(this.time_obj);
 	}
 
-}
-
-var YEAR_DAYS = 300;
-var PCC_TO_GT = 55000;
-var AC_TO_GT  = 50000;
-
-function convert_to_gt(time_string){
-	var date = time_string.split(" ");
-
-	if(date.length > 2){
-		return -1;
-	}
-	else if (date[1] == "GT"){
-		var parsed_date = date[0].split("/")
-		//YYYY
-		if (parsed_date.length == 1){
-				return parseInt(date[0]) * YEAR_DAYS;
-		}
-		//YYYY/DDD
-		else if (parsed_date.length == 2){
-				return parseInt(parsed_date[0]) * YEAR_DAYS + parseInt(parsed_date[1]);
-		}
-		//No months in God Time
-		else if (parsed_date.length == 3){
-				return -1;
-		}
-		else{
-				return -1;
-		}
-	}
-	else if (date.length == 1 || date[1] == "PCC"){
-		var parsed_date = date[0].split("/")
-		// format YYYY
-		if (parsed_date.length == 1){
-				return (parseInt(date[0]) + PCC_TO_GT) * YEAR_DAYS;
-		}
-		// format YYYY/DDD
-		else if (parsed_date.length == 2){
-				return parseInt(parsed_date[0] + PCC_TO_GT) * YEAR_DAYS + parseInt(parsed_date[1]);
-		}
-		// format YYYY/MM/DD
-		else if (parsed_date.length == 3){
-			//dont have months yet
-			return -1;
-			//return parseInt(parsed_date[0] + PCC_TO_GT) * YEAR_DAYS + parseInt(parsed_date[1]) * MONTH + parseInt(parsed_date[1]);
-		}
-		else{
-				return -1;
-		}
-	}
-	else if (date[1] == "AC"){
-		var parsed_date = date[0].split("/")
-		// format YYYY
-		if (parsed_date.length == 1){
-				return (parseInt(date[0]) + AC_TO_GT) * YEAR_DAYS;
-		}
-		// format YYYY/DDD
-		else if (parsed_date.length == 2){
-				return parseInt(parsed_date[0] + AC_TO_GT) * YEAR_DAYS + parseInt(parsed_date[1]);
-		}
-		// format YYYY/MM/DD
-		else if (parsed_date.length == 3){
-			//dont have months yet
-			return -1;
-			//return parseInt(parsed_date[0] + AC_TO_GT) * YEAR_DAYS + parseInt(parsed_date[1]);
-		}
-		else{
-				return -1;
-		}
-	}
-	else{
-		return -1;
-	}
-}
-
-class TimeObject{
-	constructor(string){
-		this.GT = convert_to_gt(string);
-	}
-
-	//Returns in days
-	get_as_string(type){
-		switch(type){
-			case "PCC":
-				return (this.get_as_number(type) / YEAR_DAYS).toString() +" "+ type;
-			case "AC":
-				return (this.get_as_number(type) / YEAR_DAYS).toString() +" "+ type;
-			case "GT":
-				return (this.get_as_number(type) / YEAR_DAYS).toString() +" "+ type;
-			case "NOW":
-				return (this.get_as_number(type) / YEAR_DAYS).toString() +" years ago";
-			default:
-				return "UNKNOWN TYPE ("+type+")";
-		}
-
-	}
-
-	//Returns in days
-	get_as_number(type){
-		switch(type){
-			case "PCC":
-				return this.GT - PCC_TO_GT * YEAR_DAYS;
-			case "AC":
-				return this.GT - AC_TO_GT * YEAR_DAYS;
-			case "GT":
-				return this.GT;
-			case "NOW":
-				return CURRENT_TIME - this.GT;
-			default:
-				return 0;
-		}
-	}
 }
 
 function hasField(tiddler, field){
@@ -188,20 +79,16 @@ class Calendar{
 
 		//Set up reference date
 		if (json_data.ref != undefined && json_data.ref != ""){
-			var split_date = json_data.ref.split(" ");
-
-			this.ref_cal = split_date[1];
-			this.ref_date = split_date[0];
+			this.ref_string = json_data.ref;
 		}
 		else{
-			//Only god time should not have a refrence point.
+			//Only god time should not have a reference point.
 			if (this.abbreviation != "GT"){
 				console.log("Calendar "+this.name +" doesn't have a start date");
 				return;
 			}
 
-			this.ref_cal = "GT";
-			this.ref_date = "0";
+			this.ref_string = "0 GT";
 			this.reference = 0;
 		}
 
@@ -235,7 +122,7 @@ class Calendar{
 	parseDate(date_string){
 		if (!this.valid){
 			console.log(this.name+" is not a valid Calendar");
-			return -1;
+			return NaN;
 		}
 
 		var date_split = date_string.split("/");
@@ -244,23 +131,26 @@ class Calendar{
 		switch(date_split.length){
 			case 1:
 				time_gt = parseInt(date_split[0]) * this.year_len + this.reference;
-				 break;
+				break;
 			case 2:
-				time_gt = parseInt(date_split[0] * this.year_len) + parseInt(date_split[1]);
-				 break;
+				time_gt = parseInt(date_split[0] * this.year_len) +
+					parseInt(date_split[1]) +
+					this.reference;
+				break;
 			case 3:
 				time_gt = parseInt(date_split[0] * this.year_len) +
-				 this.months[parseInt(date_split[1])].position +
-				 parseInt(date_split[2]);
-				 break;
+					this.months[parseInt(date_split[1])].position +
+					parseInt(date_split[2]) +
+					this.reference;
+				break;
 			default:
 				console.log("\""+date_string+"\" is a bad date parse for Calendar "+this.name);
-				return -1;
+				return NaN;
 		}
 
 		if (isNaN(time_gt)){
 			console.log("\""+date_string+"\" did not produce a number for Calendar "+this.name);
-			return -1;
+			return NaN;
 		}
 
 		return time_gt;
@@ -270,12 +160,12 @@ class Calendar{
 	get_string(god_time){
 		if (!this.valid){
 			console.log(this.name+" is not a valid Calendar");
-			return "NULL";
+			return undefined;
 		}
 
 		if (isNaN(god_time)){
 			console.log("getString requires a number!");
-			return "BAD FORMATION";
+			return undefined;
 		}
 
 		var relative_time = god_time - this.reference;
@@ -287,31 +177,72 @@ class Calendar{
 
 		//get month
 		var month;
-		for (month = this.months.length; month > 0; month--){
+		for (month = this.months.length - 1; month > 0; month--){
 			//I don't like this break but i think its safer then having
 			//a while loop potentially run forever
-			if (day < this.months[month].position) break;
+			if (day > this.months[month].position) break;
 		}
 
 		//get day
 		day -= this.months[month].position;
 
 		//Now put it all together
-		return year.toString()+"/"+month.toString()+"/"+day.toString()+" "+this.abbreviation;
+		return year.toString()+"/"+(month+1).toString()+"/"+(day+1).toString()+" "+this.abbreviation;
 	}
 }
 
 var Calendar_List;
+function parseStringTime(time_string){
+	var split = time_string.split(" ");
+
+	var calendar = split[1];
+	if (calendar == undefined) calendar = DEFAULT_CALENDAR;
+	var date_string = split[0];
+
+	if (Calendar_List[calendar] == undefined){
+		//This should ONLY occur during initialization
+		return NaN;
+	}
+
+	return Calendar_List[calendar].parseDate(date_string);
+}
+
+//Sort the Calendars into a useful order
+function GetRelativeCalendars(tmpCalendarList){
+	//Check if empty
+	if (Object.keys(Calendar_List).length === 0){
+		console.log("We need at least 1 Got Time calendar");
+		return;
+	}
+
+	//just run through the list at most the length of the temp list
+	//this should keep the problem bounded
+	for (var attempts = tmpCalendarList.length - 1; attempts >= 0; attempts--) {
+
+		//Should be free to splice because iterating in reverse
+		for (var index = tmpCalendarList.length - 1; index >= 0; index--) {
+			var tmp_ref = parseStringTime(tmpCalendarList[index].ref_string);
+
+			if (!isNaN(tmp_ref)){
+				tmpCalendarList[index].reference = tmp_ref;
+				Calendar_List[tmpCalendarList[index].abbreviation] =
+					tmpCalendarList[index];
+				tmpCalendarList.splice(index, 1);
+			}
+		}
+
+		//DOne lets break, this is stupid i know
+		// if(tmpCalendarList.length == 0) break;
+	}
+}
 
 function GetInitalData(wiki){
-	//Get the time of Now
-	CURRENT_TIME = convert_to_gt(wiki.getTiddler("Now").fields.time);
-
 	//Get calendar data
 	const CALENDAR_START_STRING = "$:/Calendar/Custom/";
 
 	//Parse all calendars in wiki
-	Calendar_List = new Array();
+	Calendar_List = {};
+	var tmpCalendarList = new Array();
 	wiki.each(function(tiddler, title){
 		if(title.startsWith(CALENDAR_START_STRING)){
 			var json_obj = JSON.parse(tiddler.fields.text);
@@ -319,7 +250,14 @@ function GetInitalData(wiki){
 			var tmp = new Calendar(title.substring(CALENDAR_START_STRING.length), json_obj);
 
 			if (tmp.valid){
-				Calendar_List.push(tmp);
+				//this should be the God Time (or reference time)
+				if (tmp.reference != undefined){
+					Calendar_List[tmp.abbreviation] = tmp;
+				}
+				else{
+					tmpCalendarList.push(tmp);
+				}
+
 			}
 			else{
 				console.log("Bad Calendar");
@@ -327,6 +265,10 @@ function GetInitalData(wiki){
 		}
 	});
 
+	GetRelativeCalendars(tmpCalendarList);
+
+	//Get the time of Now
+	CURRENT_TIME = parseStringTime(wiki.getTiddler("Now").fields.time);
 }
 
 function GetEventObjects(wiki){
@@ -379,13 +321,14 @@ exports.run = function(type) {
 	console.log(this.wiki);
 	console.log(this.wiki.getTiddler("Now"));
 
-	if (!type) type = "PCC"
-
 	GetInitalData(this.wiki);
 
 	var eventObjects = GetEventObjects(this.wiki);
-
 	eventObjects = eventObjects.sort(compareTimeObjects);
+
+
+	if (!type || (!(type in Calendar_List))) type = DEFAULT_CALENDAR;
+
 	return printTimeline(eventObjects, type);
 };
 
