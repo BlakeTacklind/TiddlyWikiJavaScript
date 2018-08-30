@@ -134,13 +134,13 @@ class Calendar{
 				break;
 			case 2:
 				time_gt = parseInt(date_split[0] * this.year_len) +
-					parseInt(date_split[1]) +
+					(parseInt(date_split[1]) - 1) +
 					this.reference;
 				break;
 			case 3:
 				time_gt = parseInt(date_split[0] * this.year_len) +
-					this.months[parseInt(date_split[1])].position +
-					parseInt(date_split[2]) +
+					this.months[parseInt((date_split[1] - 1))].position +
+					(parseInt(date_split[2]) - 1) +
 					this.reference;
 				break;
 			default:
