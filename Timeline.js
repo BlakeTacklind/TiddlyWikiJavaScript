@@ -65,14 +65,14 @@ class Calendar{
 		this.valid = false;
 
 		if (abbreviation == undefined || abbreviation == "" || typeof abbreviation != "string"){
-			console.log("Calendars require an abbreviation");
+			console.error("Calendars require an abbreviation");
 			return;
 		}
 		this.abbreviation = abbreviation;
 
 		//Get the calendars name
 		if (json_data.name == undefined || json_data.name == "" || typeof json_data.name != "string") {
-			console.log("Calendar doesn't have a name, giving it the abbreviation "+this.abbreviation);
+			console.warn("Calendar doesn't have a name, giving it the abbreviation "+this.abbreviation);
 			this.name = this.abbreviation;
 		}
 		else {this.name = json_data.name};
@@ -84,7 +84,7 @@ class Calendar{
 		else{
 			//Only god time should not have a reference point.
 			if (this.abbreviation != "GT"){
-				console.log("Calendar "+this.name +" doesn't have a start date");
+				console.error("Calendar "+this.name +" doesn't have a start date");
 				return;
 			}
 
@@ -94,14 +94,14 @@ class Calendar{
 
 		//get start date
 		if (json_data.year_len == undefined || isNaN(json_data.year_len)){
-			console.log("Calendar "+this.name+" doesn't have a number of days");
+			console.error("Calendar "+this.name+" doesn't have a number of days");
 			return;
 		}
 		this.year_len = json_data.year_len;
 
 		//Get month by month data
 		if (json_data.n_months != json_data.months.length) {
-			console.log("Calendar "+this.name+" doesn't have the right number of months");
+			console.error("Calendar "+this.name+" doesn't have the right number of months");
 			return;
 		}
 		this.months = new Array();
@@ -111,7 +111,7 @@ class Calendar{
 			pos += json_data.month_len[json_data.months[i]];
 		}
 		if (pos != this.year_len){
-			console.log("Calendar "+this.name+" has "+pos+" days worth of months and has "+this.year_len+" days in a year");
+			console.error("Calendar "+this.name+" has "+pos+" days worth of months and has "+this.year_len+" days in a year");
 			return;
 		}
 
@@ -121,7 +121,7 @@ class Calendar{
 	//Parse date like Y/M/D
 	parseDate(date_string){
 		if (!this.valid){
-			console.log(this.name+" is not a valid Calendar");
+			console.error(this.name+" is not a valid Calendar");
 			return NaN;
 		}
 
@@ -144,12 +144,12 @@ class Calendar{
 					this.reference;
 				break;
 			default:
-				console.log("\""+date_string+"\" is a bad date parse for Calendar "+this.name);
+				console.error("\""+date_string+"\" is a bad date parse for Calendar "+this.name);
 				return NaN;
 		}
 
 		if (isNaN(time_gt)){
-			console.log("\""+date_string+"\" did not produce a number for Calendar "+this.name);
+			console.error("\""+date_string+"\" did not produce a number for Calendar "+this.name);
 			return NaN;
 		}
 
@@ -159,12 +159,12 @@ class Calendar{
 	//prints date from god time to this calendar
 	get_string(god_time){
 		if (!this.valid){
-			console.log(this.name+" is not a valid Calendar");
+			console.error(this.name+" is not a valid Calendar");
 			return undefined;
 		}
 
 		if (isNaN(god_time)){
-			console.log("getString requires a number!");
+			console.error("getString requires a number!");
 			return undefined;
 		}
 
@@ -200,7 +200,8 @@ function parseStringTime(time_string){
 	var date_string = split[0];
 
 	if (Calendar_List[calendar] == undefined){
-		//This should ONLY occur during initialization
+		//This should only happen durning setup
+		// console.error("Abbreviation " + calendar + " does not exist");
 		return NaN;
 	}
 
@@ -211,7 +212,7 @@ function parseStringTime(time_string){
 function GetRelativeCalendars(tmpCalendarList){
 	//Check if empty
 	if (Object.keys(Calendar_List).length === 0){
-		console.log("We need at least 1 Got Time calendar");
+		console.error("We need at least 1 'God Time' calendar");
 		return;
 	}
 
@@ -231,7 +232,7 @@ function GetRelativeCalendars(tmpCalendarList){
 			}
 		}
 
-		//DOne lets break, this is stupid i know
+		//Done lets break, only need this if the list of calendars gets rediculous
 		// if(tmpCalendarList.length == 0) break;
 	}
 }
@@ -260,7 +261,8 @@ function GetInitalData(wiki){
 
 			}
 			else{
-				console.log("Bad Calendar");
+				console.error("Bad Calendar");
+				console.log(tmp);
 			}
 		}
 	});
