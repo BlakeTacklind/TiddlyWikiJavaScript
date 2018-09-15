@@ -161,19 +161,24 @@
 	}
 
 	function parseStringTime(Calendar_List, time_string){
-		var split = time_string.split(" ");
+		try{
+			var split = time_string.split(" ");
 
-		var calendar = split[1];
-		if (calendar == undefined) calendar = DEFAULT_CALENDAR;
-		var date_string = split[0];
+			var calendar = split[1];
+			if (calendar == undefined) calendar = DEFAULT_CALENDAR;
+			var date_string = split[0];
 
-		if (Calendar_List[calendar] == undefined){
-			//This should only happen durning setup
-			// console.error("Abbreviation " + calendar + " does not exist");
-			return NaN;
+			if (Calendar_List[calendar] == undefined){
+				//This should only happen durning setup
+				// console.error("Abbreviation " + calendar + " does not exist");
+				return NaN;
+			}
+
+			return Calendar_List[calendar].parseDate(date_string);
 		}
-
-		return Calendar_List[calendar].parseDate(date_string);
+		catch(err){
+			console.error("Failed to parse date string: "+ time_string+". "+err);
+		}
 	}
 
 	//Sort the Calendars into a useful order
@@ -238,7 +243,7 @@
 		GetRelativeCalendars(Calendar_List, tmpCalendarList);
 
 		//Get the time of Now, doesn't work currently
-		// CURRENT_TIME = parseStringTime(wiki.getTiddler("Now").fields.time);
+		var CURRENT_TIME = parseStringTime(wiki.getTiddler("Now").fields.time);
 
 		return Calendar_List;
 	}
@@ -250,5 +255,7 @@
 	exports.compareTimeObjects = compareTimeObjects;
 
 	exports.DEFAULT_CALENDAR = DEFAULT_CALENDAR;
+
+	exports.parseStringTime = parseStringTime;
 
 })();
