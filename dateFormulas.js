@@ -42,5 +42,17 @@ exports.ntod = function(date_num, calendar=shared.DEFAULT_CALENDAR){
 	return cl[calendar].get_string(date_num);
 };
 
+// Date to number (God Time - days)
+exports.dtod = function(date_string, calendar=shared.DEFAULT_CALENDAR){
+
+	if (date_string == undefined){
+		return undefined;
+	}
+
+	var cl = shared.GetCalendarList(this.widget.wiki);
+
+	return cl[calendar].get_string(shared.parseStringTime(cl, date_string.toString()));
+};
+
 
 })();
