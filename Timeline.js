@@ -19,6 +19,7 @@ exports.name = "TimeLineMacro";
 
 exports.params = [
 	{name: "type"},
+	{name: "ibd"},
 ];
 
 
@@ -36,7 +37,7 @@ function hasField(tiddler, field){
 	return typeof tiddler.getFieldString(field) != "undefined" && tiddler.getFieldString(field) != "";
 }
 
-function GetEventObjects(wiki, Calendar_List){
+function GetEventObjects(wiki, Calendar_List, ignore_birth_deaths=false){
 
 	var timeStampRegEx = /<<TimeStamp\s+"([^"]+)"\s+"([^"]+)"(?:\s+"[^"]+")?\s*>>/g;
 	var eventObjects = new Array();
@@ -57,11 +58,11 @@ function GetEventObjects(wiki, Calendar_List){
 			}
 
 
-			if (hasField(tiddler, "born")){
+			if (!ignore_birth_deaths && hasField(tiddler, "born")){
 				eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("born"), "Birth of "+title, title));
 			}
 
-			if (hasField(tiddler, "died")){
+			if (!ignore_birth_deaths && hasField(tiddler, "died")){
 				eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("died"), "Death of "+title, title));
 			}
 
@@ -81,7 +82,7 @@ function GetEventObjects(wiki, Calendar_List){
 /*
 Run the macro
 */
-exports.run = function(type) {
+exports.run = function(type, ibd) {
 	//Satements for debug
 	// console.log(this.wiki);
 	// console.log(this.wiki.getTiddler("Now"));
@@ -89,7 +90,7 @@ exports.run = function(type) {
 	var cl = shared.GetCalendarList(this.wiki);
 
 	// var eventObjects = GetEventObjects(this.wiki);
-	var eventObjects = GetEventObjects(this.wiki, cl);//GetEventObjects(this.wiki);
+	var eventObjects = GetEventObjects(this.wiki, cl, (ibd==0));//GetEventObjects(this.wiki);
 	eventObjects = eventObjects.sort(shared.compareTimeObjects);
 
 
