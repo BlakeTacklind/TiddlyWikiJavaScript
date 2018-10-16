@@ -13,7 +13,7 @@ Example:
 This is the TimeLineMacro of Tiddly Wiki 5 written in JavaScript
 It is used for creating the timeline of events in the world
 */
-var shared = require("$:/macro/SharedData");
+var shared = require("$:/macro/SharedData.js");
 
 exports.name = "TimeLineMacro";
 

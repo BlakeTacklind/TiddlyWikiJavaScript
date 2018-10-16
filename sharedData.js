@@ -243,7 +243,7 @@
 		GetRelativeCalendars(Calendar_List, tmpCalendarList);
 
 		//Get the time of Now, doesn't work currently
-		var CURRENT_TIME = parseStringTime(wiki.getTiddler("Now").fields.time);
+		// var CURRENT_TIME = parseStringTime(wiki.getTiddler("Now").fields.time);
 
 		return Calendar_List;
 	}
