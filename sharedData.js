@@ -5,6 +5,17 @@
 /*global $tw: false */
 	"use strict";
 	const DEFAULT_CALENDAR = "PCC";
+	var setup = true;
+
+	const HOURS_PER_DAY = 24;
+	const MINUTES_PER_HOUR = 60;
+	const SECONDS_PER_MINUTE = 60;
+
+	Number.prototype.pad = function(size) {
+		var s = String(this);
+		while (s.length < (size || 2)) {s = "0" + s;}
+		return s;
+	}
 
 	class EventObject{
 		constructor(Calendar_List, time_string, event_name, event_tag, event_location=""){
@@ -88,44 +99,6 @@
 			this.valid = true;
 		}
 
-		//Parse date like Y/M/D
-		parseDate(date_string){
-			if (!this.valid){
-				console.error(this.name+" is not a valid Calendar");
-				return NaN;
-			}
-
-			var date_split = date_string.split("/");
-
-			var time_gt;
-			switch(date_split.length){
-				case 1:
-					time_gt = parseInt(date_split[0]) * this.year_len + this.reference;
-					break;
-				case 2:
-					time_gt = parseInt(date_split[0] * this.year_len) +
-						(parseInt(date_split[1]) - 1) +
-						this.reference;
-					break;
-				case 3:
-					time_gt = parseInt(date_split[0] * this.year_len) +
-						this.months[parseInt((date_split[1] - 1))].position +
-						(parseInt(date_split[2]) - 1) +
-						this.reference;
-					break;
-				default:
-					console.error("\""+date_string+"\" is a bad date parse for Calendar "+this.name);
-					return NaN;
-			}
-
-			if (isNaN(time_gt)){
-				console.error("\""+date_string+"\" did not produce a number for Calendar "+this.name);
-				return NaN;
-			}
-
-			return time_gt;
-		}
-
 		//prints date from god time to this calendar
 		get_string(god_time){
 			if (!this.valid){
@@ -143,7 +116,7 @@
 			//get year
 			var year = Math.floor(relative_time/this.year_len);
 
-			var day = relative_time%this.year_len;
+			var day = Math.floor(relative_time)%this.year_len;
 
 			//get month
 			var month;
@@ -156,26 +129,72 @@
 			//get day
 			day -= this.months[month].position;
 
+			const date_string = (day+1).toString()+"/"+(month+1).toString()+"/"+year.toString();
+
+			var time_of_day = relative_time % 1;
+			var clock_string = ""
+
+			if (time_of_day > 0){
+				time_of_day += 0.0000001;
+				time_of_day *= HOURS_PER_DAY;
+				var hour = Math.floor(time_of_day);
+				time_of_day -= hour;
+				time_of_day *= MINUTES_PER_HOUR;
+				var minute = Math.floor(time_of_day);
+
+				clock_string = hour.toString()+":"+minute.pad(2);
+
+				time_of_day -= minute;
+				time_of_day *= SECONDS_PER_MINUTE;
+				if (Math.floor(time_of_day + 0.000001) > 0){
+					//persion to .001 seconds
+					clock_string += ":"+Math.floor(time_of_day).pad(2);
+				}
+
+				clock_string += " ";
+			}
+
 			//Now put it all together
-			return year.toString()+"/"+(month+1).toString()+"/"+(day+1).toString()+" "+this.abbreviation;
+			return clock_string + date_string+" "+this.abbreviation;
 		}
 	}
 
 	function parseStringTime(Calendar_List, time_string){
 		try{
-			var split = time_string.split(" ");
+			var timeStringRegex = /^(?:(\d+)(?:\:(\d+)(?:\:(\d+(?:\.\d+)?))?)? )?(?:(\d+)\/(?:(\d+)\/)?)?(-?\d+)(?: (\w+))?$/;
 
-			var calendar = split[1];
-			if (calendar == undefined) calendar = DEFAULT_CALENDAR;
-			var date_string = split[0];
+			var match = timeStringRegex.exec(time_string);
 
-			if (Calendar_List[calendar] == undefined){
-				//This should only happen durning setup
-				// console.error("Abbreviation " + calendar + " does not exist");
+			if (!match){
+				console.error("Improperly formed date string: "+ time_string);
 				return NaN;
 			}
 
-			return Calendar_List[calendar].parseDate(date_string);
+			var calendar = match[7];
+			if (!calendar){
+				calendar = DEFAULT_CALENDAR;
+			}
+
+			if (Calendar_List[calendar] == undefined){
+				//This should only happen durning setup
+				if (!setup) console.error("Abbreviation " + calendar + " does not exist");
+				return NaN;
+			}
+
+			var hour = match[1]?parseInt(match[1]):0;
+			var minute = match[2]?parseInt(match[2]):0;
+			var second = match[3]?parseInt(match[3]):0;
+			var day = match[4]?parseInt(match[4])-1:0;
+			var month = match[5]?parseInt(match[5])-1:0;
+			var year = parseInt(match[6]);
+
+			const cal = Calendar_List[calendar];
+
+			return cal.reference +
+				cal.year_len * year +
+				cal.months[month].position +
+				day +
+				(hour + ((minute + (second / SECONDS_PER_MINUTE)) / MINUTES_PER_HOUR)) / HOURS_PER_DAY;
 		}
 		catch(err){
 			console.error("Failed to parse date string: "+ time_string+". "+err);
@@ -189,6 +208,8 @@
 			console.error("We need at least 1 'God Time' calendar");
 			return;
 		}
+
+		setup = true;
 
 		//just run through the list at most the length of the temp list
 		//this should keep the problem bounded
@@ -209,6 +230,8 @@
 			//Done lets break, only need this if the list of calendars gets rediculous
 			// if(tmpCalendarList.length == 0) break;
 		}
+
+		setup = false;
 	}
 
 	function GetCalendarList(wiki){
