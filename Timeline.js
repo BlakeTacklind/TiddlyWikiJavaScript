@@ -39,8 +39,8 @@ function hasField(tiddler, field){
 
 function GetEventObjects(wiki, Calendar_List, ignore_birth_deaths=false){
 
-	var timeStampRegEx = /<<TimeStamp\s+"([^"]+)"\s+"([^"]+)"(?:\s+"[^"]+")(?:\s+"[^"]+")?\s*>>/g;
-	var personSeenRegEx = /<<PersonSeen\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]+)"(?:\s+"[^"]+")?\s*>>/g;
+	var timeStampRegEx = /<<TimeStamp\s+"([^"]+)"\s+"([^"]+)">>/g;
+	var personSeenRegEx = /<<PersonSeen\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]+)"\s*>>/g;
 	var eventObjects = new Array();
 
 	wiki.each(function(tiddler, title){
@@ -80,7 +80,7 @@ function GetEventObjects(wiki, Calendar_List, ignore_birth_deaths=false){
 			}
 
 			while(match = personSeenRegEx.exec(text)){
-				eventObjects.push(new shared.EventObject(Calendar_List, match[1], match[2], title, ""));
+				eventObjects.push(new shared.EventObject(Calendar_List, match[3], match[4] + " " + match[1], title, match[2]));
 			}
 		}
 
