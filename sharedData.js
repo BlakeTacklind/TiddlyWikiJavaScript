@@ -18,11 +18,12 @@
 	}
 
 	class EventObject{
-		constructor(Calendar_List, time_string, event_name, event_tag){
+		constructor(Calendar_List, time_string, event_name, event_tag, event_location=""){
 			this.time_obj = parseStringTime(Calendar_List, time_string);
 			this.event_name = event_name;
 			this.event_tag = event_tag;
 			this.Calendar_List = Calendar_List;
+			this.location=event_location;
 		}
 
 		get_gt(){

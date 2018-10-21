@@ -39,38 +39,48 @@ function hasField(tiddler, field){
 
 function GetEventObjects(wiki, Calendar_List, ignore_birth_deaths=false){
 
-	var timeStampRegEx = /<<TimeStamp\s+"([^"]+)"\s+"([^"]+)"(?:\s+"[^"]+")?\s*>>/g;
+	var timeStampRegEx = /<<TimeStamp\s+"([^"]+)"\s+"([^"]+)">>/g;
+	var personSeenRegEx = /<<PersonSeen\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]+)"\s*>>/g;
 	var eventObjects = new Array();
 
 	wiki.each(function(tiddler, title){
 		if (!title.startsWith("$")){
 			if (hasField(tiddler, "time")){
+				var location = "";
+				if (hasField(tiddler, "location")){
+					location = tiddler.getFieldString("location");
+				}
+
 				if (hasField(tiddler, "end")){
-					eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("time"), "start of "+title, title));
-					eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("end"), "end of "+title, title));
+					eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("time"), "start of "+title, title, location));
+					eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("end"), "end of "+title, title, location));
 				}
 				else{
-					eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("time"), title, title));
+					eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("time"), title, title, location));
 				}
 			}
 			else if (hasField(tiddler, "end")){
-				eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("end"), title, title));
+				eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("end"), title, title, location));
 			}
 
 
 			if (!ignore_birth_deaths && hasField(tiddler, "born")){
-				eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("born"), "Birth of "+title, title));
+				eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("born"), "Birth of "+title, title, ""));
 			}
 
 			if (!ignore_birth_deaths && hasField(tiddler, "died")){
-				eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("died"), "Death of "+title, title));
+				eventObjects.push(new shared.EventObject(Calendar_List, tiddler.getFieldString("died"), "Death of "+title, title, ""));
 			}
 
 			var text = tiddler.getFieldString("text");
 
 			var match;
 			while(match = timeStampRegEx.exec(text)){
-				eventObjects.push(new shared.EventObject(Calendar_List, match[1], match[2], title));
+				eventObjects.push(new shared.EventObject(Calendar_List, match[1], match[2], title, ""));
+			}
+
+			while(match = personSeenRegEx.exec(text)){
+				eventObjects.push(new shared.EventObject(Calendar_List, match[3], match[4] + " " + match[1], title, match[2]));
 			}
 		}
 
